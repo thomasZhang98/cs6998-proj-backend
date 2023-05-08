@@ -13,10 +13,11 @@ def lambda_handler(event, context):
     print("Event: {}".format(json.dumps(event)))
     
     email = event['email']
-    class_value = event['class']
+    temp = client.get_item(TableName='project-profiles', Key={'email': {'S': email}})
+    class_value = temp['Item']['class']['S']
                 
     # Find students in the same class
-    classmates = {}
+    classmates = []
     
     # Define the table scan params
     scan_params = {
@@ -30,14 +31,17 @@ def lambda_handler(event, context):
     
     # Scan the table
     response = client.scan(**scan_params)
-    
+    print(response)
     # Return the profiles in the same class
-    classmates = response['Items']
+    for i in response['Items']:
+        e = i['email']['S']
+        if e != email:
+            classmates.append(e)
     print("matching profiles: {}".format(classmates))
         
     print("Classmates")
     print(classmates)
     return {
         'statusCode': 200,
-        'body': json.dumps(classmates)
+        'body': classmates
     }
