@@ -2,6 +2,7 @@ import boto3
 import json
 import logging
 from botocore.exceptions import ClientError
+import time
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -12,9 +13,8 @@ def lambda_handler(event, context):
     receive = event['receive']
     link = 'http://coms6998p4.s3-website-us-east-1.amazonaws.com'
     
-    messageToSend = """
-    {} has invited you to join their project group!
-    {}. Follow this link to accept their request!\n{}
+    messageToSend = """{} has invited you to join their project group! 
+    Follow this link to accept their request!\n{}
     """.format(name, link)
     
     
@@ -32,6 +32,20 @@ def lambda_handler(event, context):
     </html>""".format(messageToSend=messageToSend)            
     CHARSET = "UTF-8"
     client = boto3.client('ses',region_name=AWS_REGION)
+    
+    client2 = boto3.client('dynamodb')
+    
+    # Generate a new, unique request ID using the current time in milliseconds
+    request_id = str(int(time.time() * 1000))
+    
+    item={
+            'request_id': {'S': request_id},
+            'sender': {'S': sender}, 
+            'receiver': {'S': receive}
+            }
+    
+    response = client2.put_item(TableName='project-group-requests', Item=item)
+    print(response)
     
     # Send the email.
     try:
